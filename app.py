@@ -1,24 +1,32 @@
 import streamlit as st
-import pandas as pd
+import numpy as np
 import pickle
 
 # Load trained model
-with open("churn_model.pkl", "rb") as f:
-    model = pickle.load(f)
+model = pickle.load(open("churn_model.pkl", "rb"))
 
-st.title("Customer Churn Prediction App")
+st.set_page_config(page_title="Customer Churn Prediction", layout="centered")
+st.title("📱 Customer Churn Prediction App")
 
-# Input fields
-tenure = st.number_input("Tenure (months)", min_value=0)
-monthly_charges = st.number_input("Monthly Charges", min_value=0.0)
-total_charges = st.number_input("Total Charges", min_value=0.0)
+# Inputs
+gender = st.selectbox("Gender", ["Male", "Female"])  # Just for UI
+contract = st.selectbox("Contract Type", ["Month-to-month", "One year", "Two year"])
+tenure = st.slider("Tenure (in months)", 0, 72, 2)
+monthly_charges = st.number_input("Monthly Charges (₹)", value=70.5)
 
-# Predict button
+# Encode input (without gender, as model expects only 3 features)
+def encode_input():
+    contract_map = {"Month-to-month": 0, "One year": 1, "Two year": 2}
+    return np.array([
+        contract_map[contract],
+        tenure,
+        monthly_charges
+    ]).reshape(1, -1)
+
+# Predict
 if st.button("Predict"):
-    input_data = pd.DataFrame([[tenure, monthly_charges, total_charges]],
-                              columns=["tenure", "MonthlyCharges", "TotalCharges"])
-    prediction = model.predict(input_data)[0]
-    if prediction == 1:
-        st.error(" Customer is likely to churn.")
+    pred = model.predict(encode_input())[0]
+    if pred == 1:
+        st.markdown("🟡 **This customer is likely to churn.**")
     else:
-        st.success(" Customer is likely to stay.")
+        st.markdown("🟢 **This customer is not likely to churn.**")
